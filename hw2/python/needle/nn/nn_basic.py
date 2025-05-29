@@ -88,12 +88,19 @@ class Linear(Module):
         self.out_features = out_features
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.weight = Parameter(init.kaiming_uniform(in_features, out_features, dtype=dtype))
+        if bias:
+            self.bias = Parameter(init.kaiming_uniform(out_features, 1, dtype=dtype).reshape((1, out_features)))
+        else:
+            self.bias = None
         ### END YOUR SOLUTION
 
     def forward(self, X: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        X_out = X @ self.weight
+        if self.bias:
+            return X_out + self.bias.broadcast_to(X_out.shape)
+        return X_out
         ### END YOUR SOLUTION
 
 
