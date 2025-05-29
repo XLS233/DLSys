@@ -139,3 +139,29 @@ def loss_err(h, y):
     y_one_hot[np.arange(y.size), y] = 1
     y_ = ndl.Tensor(y_one_hot)
     return softmax_loss(h, y_).numpy(), np.mean(h.numpy().argmax(axis=1) != y)
+
+def train_nn(X_tr, y_tr, X_te, y_te, hidden_dim = 500,
+             epochs=10, lr=0.5, batch=100):
+    """ Example function to train two layer neural network """
+    n, k = X_tr.shape[1], y_tr.max() + 1
+    np.random.seed(0)
+    W1 = ndl.Tensor(np.random.randn(n, hidden_dim).astype(np.float32) / np.sqrt(hidden_dim))
+    W2 = ndl.Tensor(np.random.randn(hidden_dim, k).astype(np.float32) / np.sqrt(k))
+
+    print("| Epoch | Train Loss | Train Err | Test Loss | Test Err |")
+    for epoch in range(epochs):
+        W1, W2 = nn_epoch(X_tr, y_tr, W1, W2, lr=lr, batch=batch)
+        train_loss, train_err = loss_err(ndl.Tensor(np.maximum(X_tr@W1.cached_data,0)@W2.cached_data), y_tr)
+        test_loss, test_err = loss_err(ndl.Tensor(np.maximum(X_te@W1.cached_data,0)@W2.cached_data), y_te)
+        print("|  {:>4} |    {:.5f} |   {:.5f} |   {:.5f} |  {:.5f} |"\
+              .format(epoch, train_loss, train_err, test_loss, test_err))
+
+
+if __name__ == "__main__":
+    X_tr, y_tr = parse_mnist("data/train-images-idx3-ubyte.gz",
+                             "data/train-labels-idx1-ubyte.gz")
+    X_te, y_te = parse_mnist("data/t10k-images-idx3-ubyte.gz",
+                             "data/t10k-labels-idx1-ubyte.gz")
+
+    print("Training two layer neural network w/ 100 hidden units")
+    train_nn(X_tr, y_tr, X_te, y_te, hidden_dim=100, epochs=20, lr = 0.2)
