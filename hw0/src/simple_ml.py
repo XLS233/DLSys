@@ -62,7 +62,7 @@ def parse_mnist(image_filename, label_filename):
     X = np.reshape(pixels, [imgNum, rows * cols]).astype('float32')
     X_max = np.max(X)
     X_min = np.min(X)
-    
+
     X_normalized = ((X - X_min) / (X_max - X_min))
 
     f = gzip.open(label_filename)
@@ -95,7 +95,10 @@ def softmax_loss(Z, y):
         Average softmax loss over the sample.
     """
     ### BEGIN YOUR CODE
-    pass
+    m = Z.shape[0]
+    Z1 = np.log(np.sum(np.exp(Z), axis=1)).T
+    Z2 = Z[np.arange(0, m), y]
+    return np.mean(Z1 - Z2)
     ### END YOUR CODE
 
 
