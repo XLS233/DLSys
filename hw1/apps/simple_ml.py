@@ -33,7 +33,33 @@ def parse_mnist(image_filesname, label_filename):
                 for MNIST will contain the values 0-9.
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    f = gzip.open(image_filesname)
+    data = f.read()
+    f.close()
+
+    h = struct.unpack_from('>IIII', data, 0)
+    offset = struct.calcsize('>IIII')
+    imgNum, rows, cols = h[1], h[2], h[3]
+    pixelString = '>' + str(imgNum * rows * cols) + 'B'
+    pixels = struct.unpack_from(pixelString, data, offset)
+    X = np.reshape(pixels, [imgNum, rows * cols]).astype('float32')
+
+    X_max = np.max(X)
+    X_min = np.min(X)
+    X_normalized = ((X - X_min) / (X_max - X_min))
+
+    f = gzip.open(label_filename)
+    data = f.read()
+    f.close()
+
+    h = struct.unpack_from('>II', data, 0)
+    offset = struct.calcsize('>II')
+    num = h[1]
+    labelString = '>' + str(num) + 'B'
+    labels = struct.unpack_from(labelString, data, offset)
+    y = np.reshape(labels, [num]).astype('uint8')
+
+    return (X_normalized, y)
     ### END YOUR SOLUTION
 
 
@@ -54,7 +80,10 @@ def softmax_loss(Z, y_one_hot):
         Average softmax loss over the sample. (ndl.Tensor[np.float32])
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    m = Z.shape[0]
+    Z1 = ndl.ops.summation(ndl.ops.log(ndl.ops.summation(ndl.ops.exp(Z), axes=(1, ))))
+    Z2 = ndl.ops.summation(Z * y_one_hot)
+    return (Z1 - Z2) / m
     ### END YOUR SOLUTION
 
 
