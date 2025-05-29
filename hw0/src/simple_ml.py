@@ -101,6 +101,22 @@ def softmax_loss(Z, y):
     return np.mean(Z1 - Z2)
     ### END YOUR CODE
 
+def softmax(x):
+    if len(x.shape) > 1:
+        # Matrix
+        tmp = np.max(x, axis=1)
+        x -= tmp.reshape((x.shape[0], 1))
+        x = np.exp(x)
+        tmp = np.sum(x, axis=1)
+        x /= tmp.reshape((x.shape[0], 1))
+    else:
+        # Vector
+        tmp = np.max(x)
+        x -= tmp
+        x = np.exp(x)
+        tmp = np.sum(x)
+        x /= tmp
+    return x
 
 def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
     """ Run a single epoch of SGD for softmax regression on the data, using
@@ -121,7 +137,22 @@ def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    k = theta.shape[1]
+    m = X.shape[0]
+  
+    for i in range(0, m, batch):
+        X_batch = X[i:i+batch]
+        y_batch = y[i:i+batch]
+
+        y_pre = np.dot(X_batch, theta) # bxk
+        # y_e = np.exp(y_pre) # bxk
+
+        # Z = y_e / np.sum(y_e, axis=1).reshape(-1, 1) # bxk
+        Z = softmax(y_pre)
+        I = np.eye(k)[y_batch]  # bxk
+        g = np.dot(X_batch.T, Z - I) / batch # dxb bxk -> dxk
+    
+        theta[:,:] = theta[:,:] - lr * g
     ### END YOUR CODE
 
 
