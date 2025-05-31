@@ -15,6 +15,35 @@ typedef float scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
 
 
+bool next_index(std::vector<int32_t>& index, const std::vector<int32_t>& shape) {
+  if (index.size() == 0) {
+    return false;
+  }
+  index[index.size() - 1]++;
+  for (int i = index.size() - 1; i >= 0; i--) {
+    if (index[i] >= shape[i]) {
+      index[i] = 0;
+      if (i > 0) {
+        index[i - 1]++;
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+  return true;
+}
+
+size_t index_to_offset(const std::vector<int32_t>& index, const std::vector<int32_t>& strides, const size_t offset) {
+  size_t res = offset;
+  for (int i = 0; i < index.size(); i++) {
+    res += index[i] * strides[i];
+  }
+  return res;
+} 
+
+
 /**
  * This is a utility structure for maintaining an array aligned to ALIGNMENT boundaries in
  * memory.  This alignment should be at least TILE * ELEM_SIZE, though we make it even larger
@@ -62,7 +91,12 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<int32_t> shap
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  auto a_index = std::vector<int32_t>(shape.size(), 0);
+  for (int out_index = 0; out_index < out->size; out_index++) {
+    size_t a_offset = index_to_offset(a_index, strides, offset);
+    out->ptr[out_index] = a.ptr[a_offset];
+    next_index(a_index, shape);
+  }
   /// END SOLUTION
 }
 
@@ -79,7 +113,12 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<int32_t>
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  auto out_index = std::vector<int32_t>(shape.size(), 0);
+  for (int a_index = 0; a_index < a.size; a_index++) {
+    size_t out_offset = index_to_offset(out_index, strides, offset);
+    out->ptr[out_offset] = a.ptr[a_index];
+    next_index(out_index, shape);
+  }
   /// END SOLUTION
 }
 
@@ -100,7 +139,12 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    */
 
   /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
+  auto out_index = std::vector<int32_t>(shape.size(), 0);
+  for (int i = 0; i < size; i++) {
+    size_t out_offset = index_to_offset(out_index, strides, offset);
+    out->ptr[out_offset] = val;
+    next_index(out_index, shape);
+  }
   /// END SOLUTION
 }
 
