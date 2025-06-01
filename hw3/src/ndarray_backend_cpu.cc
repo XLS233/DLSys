@@ -294,8 +294,37 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
   /// END SOLUTION
 }
 
+void EwiseOp(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, std::function<scalar_t(scalar_t, scalar_t)> op) {
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = op(a.ptr[i], b.ptr[i]);
+  }
+}
+
+void ScalarOp(const AlignedArray& a, scalar_t val, AlignedArray* out, std::function<scalar_t(scalar_t, scalar_t)> op) {
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = op(a.ptr[i], val);
+  }
+}
+
 }  // namespace cpu
 }  // namespace needle
+
+#define REGISTER_EWISW_OP(NAME, OP) \
+    m.def(NAME, [](const AlignedArray& a, const AlignedArray& b, AlignedArray* out) { \
+      EwiseOp(a, b, out, OP); \
+    });
+
+#define REGISTER_SCALAR_OP(NAME, OP) \
+  m.def(NAME, [](const AlignedArray& a, scalar_t val, AlignedArray* out) { \
+    ScalarOp(a, val, out, OP); \
+  });
+
+#define REGISTER_SINGLE_OP(NAME, OP) \
+  m.def(NAME, [](const AlignedArray& a, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = OP(a.ptr[i]); \
+    } \
+  });
 
 PYBIND11_MODULE(ndarray_backend_cpu, m) {
   namespace py = pybind11;
@@ -332,22 +361,22 @@ PYBIND11_MODULE(ndarray_backend_cpu, m) {
   m.def("ewise_add", EwiseAdd);
   m.def("scalar_add", ScalarAdd);
 
-  // m.def("ewise_mul", EwiseMul);
-  // m.def("scalar_mul", ScalarMul);
-  // m.def("ewise_div", EwiseDiv);
-  // m.def("scalar_div", ScalarDiv);
-  // m.def("scalar_power", ScalarPower);
+  REGISTER_EWISW_OP("ewise_mul", std::multiplies<scalar_t>());
+  REGISTER_SCALAR_OP("scalar_mul", std::multiplies<scalar_t>());
+  REGISTER_EWISW_OP("ewise_div", std::divides<scalar_t>());
+  REGISTER_SCALAR_OP("scalar_div", std::divides<scalar_t>());
+  REGISTER_SCALAR_OP("scalar_power", static_cast<scalar_t(*)(scalar_t, scalar_t)>(std::pow));
 
-  // m.def("ewise_maximum", EwiseMaximum);
-  // m.def("scalar_maximum", ScalarMaximum);
-  // m.def("ewise_eq", EwiseEq);
-  // m.def("scalar_eq", ScalarEq);
-  // m.def("ewise_ge", EwiseGe);
-  // m.def("scalar_ge", ScalarGe);
+  REGISTER_EWISW_OP("ewise_maximum", static_cast<scalar_t(*)(scalar_t, scalar_t)>(std::fmax));
+  REGISTER_SCALAR_OP("scalar_maximum", static_cast<scalar_t(*)(scalar_t, scalar_t)>(std::fmax));
+  REGISTER_EWISW_OP("ewise_eq", std::equal_to<scalar_t>());
+  REGISTER_SCALAR_OP("scalar_eq", std::equal_to<scalar_t>());
+  REGISTER_EWISW_OP("ewise_ge", std::greater_equal<scalar_t>());
+  REGISTER_SCALAR_OP("scalar_ge", std::greater_equal<scalar_t>());
 
-  // m.def("ewise_log", EwiseLog);
-  // m.def("ewise_exp", EwiseExp);
-  // m.def("ewise_tanh", EwiseTanh);
+  REGISTER_SINGLE_OP("ewise_log", std::log);
+  REGISTER_SINGLE_OP("ewise_exp", std::exp);
+  REGISTER_SINGLE_OP("ewise_tanh", std::tanh);
 
   // m.def("matmul", Matmul);
   // m.def("matmul_tiled", MatmulTiled);
