@@ -300,13 +300,13 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        assert all(
-            new_shape[i] == self.shape[i] or self.shape[i] == 1 for i in range(len(self.shape))
-        ), "Invalid broadcast shape"
-        new_strides = tuple(
-            self.strides[i] if self.shape[i] == new_shape[i] else 0 for i in range(len(self.shape))
-        )
-        return self.compact().as_strided(new_shape, new_strides)
+        len_diff = len(new_shape) - len(self.shape)
+        new_strides = [0] * len_diff + list(self.strides)
+        for i, d in enumerate(self.shape):
+            assert d == 1 or d == new_shape[len_diff + i]
+            if d == 1:
+                new_strides[len_diff + i] = 0
+        return self.as_strided(new_shape, tuple(new_strides))
         ### END YOUR SOLUTION
 
     ### Get and set elements
@@ -604,7 +604,11 @@ class NDArray:
         Note: compact() before returning.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_stride = list(self.strides)
+        for i in axes:
+            new_stride[i] = - new_stride[i]
+        offset = np.sum([(self.shape[i] -1) * self.strides[i] for i in axes])
+        return NDArray.make(self.shape, strides=new_stride, device=self.device, handle=self._handle, offset=offset).compact()
         ### END YOUR SOLUTION
 
     def pad(self, axes):
@@ -614,7 +618,15 @@ class NDArray:
         axes = ( (0, 0), (1, 1), (0, 0)) pads the middle axis with a 0 on the left and right side.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        view_idxs = []
+        new_shape = []
+        for dim_size, (pad_before, pad_after) in zip(self._shape, list(axes)):
+            new_shape.append(dim_size + pad_after + pad_before)
+            view_idxs.append(slice(pad_before, dim_size + pad_after, 1))
+        res = NDArray.make(new_shape, device=self.device)
+        res.fill(0)
+        res[tuple(view_idxs)] = self
+        return res           
         ### END YOUR SOLUTION
 
 def array(a, dtype="float32", device=None):
