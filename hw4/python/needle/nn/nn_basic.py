@@ -223,7 +223,7 @@ class Dropout(Module):
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
         if self.training:
-            return x * (init.randb(*x.shape, p=(1 - self.p))) / (1 - self.p)
+            return x * (init.randb(*x.shape, p=(1 - self.p), dtype="float32", device=x.device)) / (1 - self.p)
         else:
             return x
         ### END YOUR SOLUTION
