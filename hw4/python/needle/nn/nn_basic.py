@@ -199,19 +199,25 @@ class LayerNorm1d(Module):
         self.dim = dim
         self.eps = eps
         ### BEGIN YOUR SOLUTION
-        self.weight = Parameter(init.ones(dim, device=device),requires_grad=True)
-        self.bias = Parameter(init.zeros(dim, device=device),requires_grad=True)
+        self.weight = Parameter(init.ones(1, dim, device=device, dtype=dtype), device=device, dtype=dtype)
+        self.bias = Parameter(init.zeros(1, dim, device=device, dtype=dtype), device=device, dtype=dtype)
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        batch_size = x.shape[0]
-        feature_size = x.shape[1]
-        mean = x.sum(axes=(1, )).reshape((batch_size, 1)) / feature_size
-        x_minus_mean = x - mean.broadcast_to(x.shape)
-        x_std = ((x_minus_mean ** 2).sum(axes=(1, )).reshape((batch_size, 1)) / feature_size + self.eps) ** 0.5
-        normed = x_minus_mean / x_std.broadcast_to(x.shape)
-        return self.weight.broadcast_to(x.shape) * normed + self.bias.broadcast_to(x.shape)
+        input_shape = x.shape
+        if(len(input_shape)> 2):
+            batch_size = 1
+            for i in range(0, len(input_shape) - 1):
+                batch_size *= input_shape[i]
+            x = x.reshape((batch_size, input_shape[-1]))
+        batch_size, feature_size = x.shape
+        mean = (x.sum(axes=(1, )) / feature_size).reshape((batch_size, 1)).broadcast_to(x.shape)
+        var = (((x - mean) ** 2).sum(axes=(1, )) / feature_size).reshape((batch_size, 1)).broadcast_to(x.shape)
+        std_x = (x - mean) / ops.power_scalar(var + self.eps, 0.5)
+        weight = self.weight.broadcast_to(x.shape)
+        bias = self.bias.broadcast_to(x.shape)
+        return (std_x * weight + bias).reshape(input_shape)
         ### END YOUR SOLUTION
 
 
